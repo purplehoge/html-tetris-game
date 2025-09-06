@@ -88,8 +88,28 @@ class GameManager {
         document.getElementById('hold-btn').addEventListener('click', () => this.hold());
         
         // モバイル用のスタート・ポーズボタン
-        document.getElementById('mobile-start-btn').addEventListener('click', () => this.start());
-        document.getElementById('mobile-pause-btn').addEventListener('click', () => this.togglePause());
+        const mobileStartBtn = document.getElementById('mobile-start-btn');
+        const mobilePauseBtn = document.getElementById('mobile-pause-btn');
+        
+        // タッチイベント
+        mobileStartBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.start();
+        });
+        mobilePauseBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.togglePause();
+        });
+        
+        // クリックイベント
+        mobileStartBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.start();
+        });
+        mobilePauseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.togglePause();
+        });
 
         touchButtons.forEach(button => {
             const element = document.getElementById(button.id);

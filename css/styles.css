@@ -220,8 +220,12 @@ button:disabled {
     }
 
     .start-btn, .pause-btn {
-        font-size: 0.9em;
-        padding: 8px 16px;
-        min-width: 80px;
+        font-size: 0.8em;
+        padding: 6px 12px;
+        min-width: 70px;
+        max-width: 70px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
