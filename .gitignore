@@ -1,0 +1,47 @@
+# Development tools - 開発ツール固有ファイル
+.claude/
+.vscode/
+.idea/
+
+# OS generated files - OS固有ファイル
+.DS_Store
+Thumbs.db
+
+# Environment files - 環境設定ファイル（機密情報）
+.env
+.env.local
+
+# Dependencies - 依存関係（容量大）
+node_modules/
+
+# Build outputs - ビルド成果物
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
