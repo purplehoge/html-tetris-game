@@ -15,6 +15,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .game-container {
@@ -28,6 +29,9 @@
             border-radius: 8px;
             background: #000;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 400px;
+            height: 800px;
+            image-rendering: pixelated;
         }
 
         .game-info {
@@ -151,7 +155,7 @@
 </head>
 <body>
     <div class="game-container">
-        <canvas id="game-canvas" width="400" height="800"></canvas>
+        <canvas id="game-canvas" width="200" height="400"></canvas>
         
         <div class="game-info">
             <div class="score-section">
@@ -515,6 +519,11 @@
             }
 
             handleKeyDown(event) {
+                // 十字キーとスペースキーのページスクロール・デフォルト動作を防止
+                if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(event.code)) {
+                    event.preventDefault();
+                }
+
                 if (!this.gameRunning || this.paused || this.gameOver) return;
 
                 switch(event.code) {
@@ -534,7 +543,6 @@
                         this.rotate();
                         break;
                     case 'Space':
-                        event.preventDefault();
                         this.hardDrop();
                         break;
                 }
