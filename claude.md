@@ -254,17 +254,17 @@ project/
 ### コメント例
 ```javascript
 /**
- * テトロミノを指定方向に移動させる
+ * オブジェクトを指定方向に移動させる
  * @param {number} direction - 移動方向（-1: 左, 1: 右）
  * @returns {boolean} 移動成功時true、衝突時false
  */
 move(direction) {
     // 移動先座標を計算
-    const newX = this.currentTetromino.x + direction;
+    const newX = this.currentObject.x + direction;
     
-    // 壁や既存ブロックとの衝突判定
-    if (this.isValidPosition(newX, this.currentTetromino.y)) {
-        this.currentTetromino.x = newX;
+    // 境界や既存オブジェクトとの衝突判定
+    if (this.isValidPosition(newX, this.currentObject.y)) {
+        this.currentObject.x = newX;
         return true;
     }
     return false;
