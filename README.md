@@ -94,10 +94,16 @@ npx serve .
 
 ```
 Tetris/
-├── index.html          # メインゲームファイル（HTML/CSS/JS含む）
-├── README.md          # このファイル
-├── .gitignore        # Git除外設定
-└── docs/             # 設計書
+├── index.html              # メインゲームファイル（HTML/CSS/JS含む）
+├── README.md              # このファイル
+├── .gitignore             # Git除外設定
+├── .github/               # GitHub設定
+│   └── workflows/
+│       └── deploy.yml     # GitHub Actions自動デプロイ設定
+├── scripts/               # 自動化スクリプト
+│   ├── deploy.ps1         # Windows用デプロイスクリプト
+│   └── deploy.sh          # Linux/Mac用デプロイスクリプト
+└── docs/                  # 設計書
     ├── 01_要件定義.md
     ├── 02_基本設計.md
     └── 03_詳細設計.md
@@ -145,8 +151,30 @@ Tetris/
 
 ## デプロイ方法
 
-### 静的サイトホスティング
-- GitHub Pages
+### GitHub Pages（推奨・自動化済み）
+
+このプロジェクトはGitHub Actionsによる自動デプロイが設定済みです。
+
+#### 自動デプロイ
+- masterブランチへのプッシュで自動的にGitHub Pagesにデプロイ
+- Pull Request時は自動テストが実行（デプロイなし）
+- ワークフロー状況: `https://github.com/[ユーザー名]/html-tetris-game/actions`
+
+#### 手動デプロイスクリプト
+```bash
+# Windows（PowerShell）
+.\scripts\deploy.ps1 "コミットメッセージ"
+
+# Linux/Mac
+./scripts/deploy.sh "コミットメッセージ"
+```
+
+#### 初回GitHub Pages設定（一度だけ実行）
+1. GitHubリポジトリの「Settings」→「Pages」
+2. Source: 「GitHub Actions」を選択
+3. 自動的にワークフローが実行されデプロイ開始
+
+### その他の静的サイトホスティング
 - Vercel
 - Netlify
 - Firebase Hosting

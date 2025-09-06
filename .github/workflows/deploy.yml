@@ -1,0 +1,122 @@
+name: Deploy to GitHub Pages
+
+# masterブランチへのプッシュ時とPull Request時に実行
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  # 手動実行を可能にする
+  workflow_dispatch:
+
+# GITHUB_TOKENに必要な権限を設定
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時実行を制御（最新のデプロイのみ実行）
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # GitHub Pagesへのデプロイジョブ
+  deploy:
+    # masterブランチへのプッシュ時のみデプロイ実行
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+    
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        # リポジトリルート全体をアップロード
+        path: '.'
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+  # テストジョブ（Pull Request時に実行）
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Validate HTML
+      run: |
+        echo "HTMLファイルの基本チェックを実行中..."
+        # HTMLファイルが存在することを確認
+        if [ ! -f "index.html" ]; then
+          echo "エラー: index.htmlが見つかりません"
+          exit 1
+        fi
+        
+        # 基本的な文法チェック
+        if ! grep -q "<!DOCTYPE html>" index.html; then
+          echo "エラー: DOCTYPE宣言が見つかりません"
+          exit 1
+        fi
+        
+        if ! grep -q "<canvas" index.html; then
+          echo "エラー: Canvasエレメントが見つかりません"
+          exit 1
+        fi
+        
+        echo "✅ HTML基本チェック完了"
+    
+    - name: Check required files
+      run: |
+        echo "必要ファイルの存在確認中..."
+        
+        required_files=("index.html" "README.md" "docs/01_要件定義.md" "docs/02_基本設計.md" "docs/03_詳細設計.md")
+        
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "エラー: 必須ファイル $file が見つかりません"
+            exit 1
+          fi
+        done
+        
+        echo "✅ 必要ファイルチェック完了"
+    
+    - name: Validate game configuration
+      run: |
+        echo "ゲーム設定の検証中..."
+        
+        # JavaScriptのゲーム設定確認
+        if ! grep -q "GAME_CONFIG" index.html; then
+          echo "エラー: GAME_CONFIG定義が見つかりません"
+          exit 1
+        fi
+        
+        if ! grep -q "TETROMINOES" index.html; then
+          echo "エラー: TETROMINOES定義が見つかりません"
+          exit 1
+        fi
+        
+        # 7種類のテトロミノがすべて定義されているか確認
+        tetrominoes=("I" "O" "T" "S" "Z" "J" "L")
+        for tetromino in "${tetrominoes[@]}"; do
+          if ! grep -q "$tetromino:" index.html; then
+            echo "エラー: テトロミノ $tetromino の定義が見つかりません"
+            exit 1
+          fi
+        done
+        
+        echo "✅ ゲーム設定検証完了"
