@@ -396,10 +396,10 @@ class GameManager {
                 this.softDrop();
                 break;
             case 'ArrowUp':
-                this.hardDrop();
+                this.rotate();
                 break;
             case 'Space':
-                this.rotate();
+                this.hardDrop();
                 break;
             case 'KeyC':
                 this.hold();
