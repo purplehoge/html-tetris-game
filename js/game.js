@@ -39,10 +39,14 @@ class GameManager {
         this.ctx = this.canvas.getContext('2d');
         this.nextCanvas = document.getElementById('next-canvas');
         this.nextCtx = this.nextCanvas.getContext('2d');
+        this.holdCanvas = document.getElementById('hold-canvas');
+        this.holdCtx = this.holdCanvas.getContext('2d');
         
         this.field = [];
         this.currentTetromino = null;
         this.nextTetromino = null;
+        this.holdTetromino = null;
+        this.canHold = true;
         this.score = 0;
         this.level = 1;
         this.lines = 0;
@@ -78,6 +82,9 @@ class GameManager {
             { id: 'btn-hard-drop', action: () => this.hardDrop() },
             { id: 'btn-rotate', action: () => this.rotate() }
         ];
+        
+        // ホールドボタンのイベントリスナー
+        document.getElementById('hold-btn').addEventListener('click', () => this.hold());
 
         touchButtons.forEach(button => {
             const element = document.getElementById(button.id);
@@ -112,6 +119,10 @@ class GameManager {
         this.field = Array(GAME_CONFIG.FIELD_HEIGHT).fill().map(() => 
             Array(GAME_CONFIG.FIELD_WIDTH).fill(0)
         );
+        
+        // ホールド状態をリセット
+        this.holdTetromino = null;
+        this.canHold = true;
         
         this.currentTetromino = this.createTetromino();
         this.nextTetromino = this.createTetromino();
@@ -172,6 +183,12 @@ class GameManager {
             this.clearLines();
             this.currentTetromino = this.nextTetromino;
             this.nextTetromino = this.createTetromino();
+            
+            // 新しいピースでホールド可能にリセット
+            this.canHold = true;
+            
+            // 次のピース表示を更新
+            this.drawNextPiece();
             
             if (!this.canPlace(this.currentTetromino)) {
                 this.endGame();
@@ -242,6 +259,35 @@ class GameManager {
             this.score += 2;
         }
         this.drop();
+    }
+
+    hold() {
+        if (!this.canHold || !this.gameRunning || this.paused || this.gameOver) return;
+
+        if (this.holdTetromino === null) {
+            // 初回ホールド
+            this.holdTetromino = { ...this.currentTetromino };
+            this.currentTetromino = this.nextTetromino;
+            this.nextTetromino = this.createTetromino();
+        } else {
+            // ホールドとの交換
+            const temp = { ...this.holdTetromino };
+            this.holdTetromino = { ...this.currentTetromino };
+            this.currentTetromino = temp;
+        }
+
+        // 位置をリセット
+        this.currentTetromino.x = Math.floor(GAME_CONFIG.FIELD_WIDTH / 2) - 1;
+        this.currentTetromino.y = 0;
+        this.currentTetromino.rotation = 0;
+        this.currentTetromino.shape = TETROMINOES[this.currentTetromino.type][0];
+
+        // ホールド不可にする（1回のピースにつき1回まで）
+        this.canHold = false;
+
+        // UI更新
+        this.drawNextPiece();
+        this.drawHoldPiece();
     }
 
     placeTetromino() {
@@ -330,6 +376,9 @@ class GameManager {
             case 'Space':
                 this.rotate();
                 break;
+            case 'KeyC':
+                this.hold();
+                break;
         }
     }
 
@@ -347,6 +396,7 @@ class GameManager {
         document.getElementById('level').textContent = this.level;
         document.getElementById('lines').textContent = this.lines;
         this.drawNextPiece();
+        this.drawHoldPiece();
     }
 
     drawNextPiece() {
@@ -374,6 +424,33 @@ class GameManager {
         }
     }
 
+    // ホールドピース描画
+    drawHoldPiece() {
+        this.holdCtx.clearRect(0, 0, 80, 80);
+        
+        if (this.holdTetromino) {
+            const shape = TETROMINOES[this.holdTetromino.type][0];
+            const blockSize = 15;
+            const offsetX = (80 - shape[0].length * blockSize) / 2;
+            const offsetY = (80 - shape.length * blockSize) / 2;
+            
+            for (let y = 0; y < shape.length; y++) {
+                for (let x = 0; x < shape[y].length; x++) {
+                    if (shape[y][x]) {
+                        this.drawHoldGradientBlock(
+                            offsetX + x * blockSize,
+                            offsetY + y * blockSize,
+                            blockSize - 1,
+                            blockSize - 1,
+                            COLORS[this.holdTetromino.type],
+                            this.canHold
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     // Next ピース用のグラデーションブロック描画
     drawNextGradientBlock(x, y, width, height, colorSet) {
         // メインブロック（グラデーション）
@@ -388,6 +465,35 @@ class GameManager {
         // ハイライト効果
         this.nextCtx.fillStyle = colorSet.light + '60'; // 透明度37.5%
         this.nextCtx.fillRect(x, y, width / 3, height / 3);
+    }
+
+    // ホールドピース用のグラデーションブロック描画
+    drawHoldGradientBlock(x, y, width, height, colorSet, canUse) {
+        // メインブロック（グラデーション）
+        const gradient = this.holdCtx.createLinearGradient(x, y, x + width, y + height);
+        
+        if (canUse) {
+            // 使用可能時は通常の色
+            gradient.addColorStop(0, colorSet.light);
+            gradient.addColorStop(0.5, colorSet.main);
+            gradient.addColorStop(1, colorSet.dark);
+        } else {
+            // 使用不可時はグレーアウト
+            gradient.addColorStop(0, '#888');
+            gradient.addColorStop(0.5, '#555');
+            gradient.addColorStop(1, '#333');
+        }
+        
+        this.holdCtx.fillStyle = gradient;
+        this.holdCtx.fillRect(x, y, width, height);
+        
+        // ハイライト効果
+        if (canUse) {
+            this.holdCtx.fillStyle = colorSet.light + '60';
+        } else {
+            this.holdCtx.fillStyle = '#aaa60';
+        }
+        this.holdCtx.fillRect(x, y, width / 3, height / 3);
     }
 
     // 落下予測（ゴーストピース）描画
