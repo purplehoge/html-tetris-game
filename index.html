@@ -131,9 +131,55 @@
             margin: 0 0 20px 0;
         }
 
+        /* スマートフォン用タッチコントローラー */
+        .mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .touch-btn {
+            width: 60px;
+            height: 60px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            color: #333;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .touch-btn:active {
+            background: rgba(255, 255, 255, 0.7);
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .touch-btn:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
+                padding-bottom: 180px;
             }
             
             .game-container {
@@ -149,6 +195,14 @@
             .game-info {
                 width: 300px;
                 padding: 15px;
+            }
+
+            .mobile-controls {
+                display: flex;
+            }
+
+            .controls {
+                display: none;
             }
         }
     </style>
@@ -196,13 +250,26 @@
                 </div>
                 <div class="control-item">
                     <span>↑</span>
-                    <span>回転</span>
+                    <span>ハードドロップ</span>
                 </div>
                 <div class="control-item">
                     <span>スペース</span>
-                    <span>ハードドロップ</span>
+                    <span>回転</span>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- スマートフォン用タッチコントローラー -->
+    <div id="mobile-controls" class="mobile-controls">
+        <div class="control-row">
+            <button class="touch-btn" id="btn-rotate">🔄</button>
+            <button class="touch-btn" id="btn-hard-drop">⬇️</button>
+        </div>
+        <div class="control-row">
+            <button class="touch-btn" id="btn-left">⬅️</button>
+            <button class="touch-btn" id="btn-down">⬇️</button>
+            <button class="touch-btn" id="btn-right">➡️</button>
         </div>
     </div>
 
@@ -223,16 +290,50 @@
             SCORE_MULTIPLIER: [0, 40, 100, 300, 1200]
         };
 
-        // 色設定
+        // モダンな色設定とグラデーション
         const COLORS = {
-            I: '#00f0f0', // シアン
-            O: '#f0f000', // イエロー
-            T: '#a000f0', // パープル
-            S: '#00f000', // グリーン
-            Z: '#f00000', // レッド
-            J: '#0000f0', // ブルー
-            L: '#f0a000'  // オレンジ
+            I: { main: '#00d4ff', light: '#66e0ff', dark: '#0099cc' }, // シアン
+            O: { main: '#ffd700', light: '#ffe866', dark: '#ccac00' }, // ゴールド
+            T: { main: '#a855f7', light: '#c084fc', dark: '#7c3aed' }, // パープル
+            S: { main: '#10b981', light: '#34d399', dark: '#059669' }, // エメラルド
+            Z: { main: '#ef4444', light: '#f87171', dark: '#dc2626' }, // レッド
+            J: { main: '#3b82f6', light: '#60a5fa', dark: '#2563eb' }, // ブルー
+            L: { main: '#f97316', light: '#fb923c', dark: '#ea580c' }  // オレンジ
         };
+
+        // パーティクルエフェクト用
+        let particles = [];
+        
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.02 + 0.01;
+                this.color = color;
+                this.size = Math.random() * 3 + 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+                this.size *= 0.98;
+                return this.life > 0;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
 
         // テトロミノの形状定義
         const TETROMINOES = {
@@ -332,6 +433,72 @@
                 document.addEventListener('keydown', (e) => this.handleKeyDown(e));
                 document.getElementById('start-btn').addEventListener('click', () => this.start());
                 document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
+                
+                // タッチコントローラーのイベントリスナー
+                document.getElementById('btn-left').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.move(-1);
+                    }
+                });
+                document.getElementById('btn-right').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.move(1);
+                    }
+                });
+                document.getElementById('btn-down').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver && this.canMove(0, 1)) {
+                        this.currentTetromino.y++;
+                        this.score += 1;
+                    }
+                });
+                document.getElementById('btn-hard-drop').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.hardDrop();
+                    }
+                });
+                document.getElementById('btn-rotate').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.rotate();
+                    }
+                });
+                
+                // マウスイベントも追加（PC での確認用）
+                document.getElementById('btn-left').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.move(-1);
+                    }
+                });
+                document.getElementById('btn-right').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.move(1);
+                    }
+                });
+                document.getElementById('btn-down').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver && this.canMove(0, 1)) {
+                        this.currentTetromino.y++;
+                        this.score += 1;
+                    }
+                });
+                document.getElementById('btn-hard-drop').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.hardDrop();
+                    }
+                });
+                document.getElementById('btn-rotate').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (this.gameRunning && !this.paused && !this.gameOver) {
+                        this.rotate();
+                    }
+                });
             }
 
             start() {
@@ -496,6 +663,21 @@
                 }
                 
                 if (linesToClear.length > 0) {
+                    // パーティクルエフェクトを生成
+                    linesToClear.forEach(lineY => {
+                        for (let x = 0; x < GAME_CONFIG.FIELD_WIDTH; x++) {
+                            const blockType = this.field[lineY][x];
+                            const color = COLORS[blockType] ? COLORS[blockType].main : '#ffffff';
+                            
+                            // ブロック位置からパーティクルを生成
+                            for (let i = 0; i < 3; i++) {
+                                const particleX = x * GAME_CONFIG.BLOCK_SIZE + GAME_CONFIG.BLOCK_SIZE / 2;
+                                const particleY = lineY * GAME_CONFIG.BLOCK_SIZE + GAME_CONFIG.BLOCK_SIZE / 2;
+                                particles.push(new Particle(particleX, particleY, color));
+                            }
+                        }
+                    });
+                    
                     // ライン消去
                     linesToClear.forEach(lineY => {
                         this.field.splice(lineY, 1);
@@ -540,10 +722,10 @@
                         }
                         break;
                     case 'ArrowUp':
-                        this.rotate();
+                        this.hardDrop();
                         break;
                     case 'Space':
-                        this.hardDrop();
+                        this.rotate();
                         break;
                 }
             }
@@ -573,21 +755,36 @@
                     const offsetX = (80 - shape[0].length * blockSize) / 2;
                     const offsetY = (80 - shape.length * blockSize) / 2;
                     
-                    this.nextCtx.fillStyle = COLORS[this.nextTetromino.type];
-                    
                     for (let y = 0; y < shape.length; y++) {
                         for (let x = 0; x < shape[y].length; x++) {
                             if (shape[y][x]) {
-                                this.nextCtx.fillRect(
+                                this.drawNextGradientBlock(
                                     offsetX + x * blockSize,
                                     offsetY + y * blockSize,
                                     blockSize - 1,
-                                    blockSize - 1
+                                    blockSize - 1,
+                                    COLORS[this.nextTetromino.type]
                                 );
                             }
                         }
                     }
                 }
+            }
+
+            // Next ピース用のグラデーションブロック描画
+            drawNextGradientBlock(x, y, width, height, colorSet) {
+                // メインブロック（グラデーション）
+                const gradient = this.nextCtx.createLinearGradient(x, y, x + width, y + height);
+                gradient.addColorStop(0, colorSet.light);
+                gradient.addColorStop(0.5, colorSet.main);
+                gradient.addColorStop(1, colorSet.dark);
+                
+                this.nextCtx.fillStyle = gradient;
+                this.nextCtx.fillRect(x, y, width, height);
+                
+                // ハイライト効果
+                this.nextCtx.fillStyle = colorSet.light + '60'; // 透明度37.5%
+                this.nextCtx.fillRect(x, y, width / 3, height / 3);
             }
 
             draw() {
@@ -617,25 +814,23 @@
                     this.ctx.stroke();
                 }
 
-                // 固定済みブロック描画
+                // 固定済みブロック描画（グラデーション効果付き）
                 for (let y = 0; y < GAME_CONFIG.FIELD_HEIGHT; y++) {
                     for (let x = 0; x < GAME_CONFIG.FIELD_WIDTH; x++) {
                         if (this.field[y][x]) {
-                            this.ctx.fillStyle = COLORS[this.field[y][x]];
-                            this.ctx.fillRect(
+                            this.drawGradientBlock(
                                 x * GAME_CONFIG.BLOCK_SIZE + 1,
                                 y * GAME_CONFIG.BLOCK_SIZE + 1,
                                 GAME_CONFIG.BLOCK_SIZE - 2,
-                                GAME_CONFIG.BLOCK_SIZE - 2
+                                GAME_CONFIG.BLOCK_SIZE - 2,
+                                COLORS[this.field[y][x]]
                             );
                         }
                     }
                 }
 
-                // 現在のテトロミノ描画
+                // 現在のテトロミノ描画（グラデーション効果付き）
                 if (this.currentTetromino) {
-                    this.ctx.fillStyle = COLORS[this.currentTetromino.type];
-                    
                     for (let y = 0; y < this.currentTetromino.shape.length; y++) {
                         for (let x = 0; x < this.currentTetromino.shape[y].length; x++) {
                             if (this.currentTetromino.shape[y][x]) {
@@ -643,17 +838,46 @@
                                 const drawY = (this.currentTetromino.y + y) * GAME_CONFIG.BLOCK_SIZE;
                                 
                                 if (drawY >= 0) {
-                                    this.ctx.fillRect(
+                                    this.drawGradientBlock(
                                         drawX + 1,
                                         drawY + 1,
                                         GAME_CONFIG.BLOCK_SIZE - 2,
-                                        GAME_CONFIG.BLOCK_SIZE - 2
+                                        GAME_CONFIG.BLOCK_SIZE - 2,
+                                        COLORS[this.currentTetromino.type]
                                     );
                                 }
                             }
                         }
                     }
                 }
+
+                // パーティクル更新と描画
+                particles = particles.filter(particle => {
+                    particle.update();
+                    particle.draw(this.ctx);
+                    return particle.life > 0;
+                });
+            }
+
+            // グラデーションブロック描画関数
+            drawGradientBlock(x, y, width, height, colorSet) {
+                // メインブロック（グラデーション）
+                const gradient = this.ctx.createLinearGradient(x, y, x + width, y + height);
+                gradient.addColorStop(0, colorSet.light);
+                gradient.addColorStop(0.5, colorSet.main);
+                gradient.addColorStop(1, colorSet.dark);
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(x, y, width, height);
+                
+                // ハイライト効果
+                this.ctx.fillStyle = colorSet.light + '40'; // 透明度25%
+                this.ctx.fillRect(x, y, width / 3, height / 3);
+                
+                // 境界線
+                this.ctx.strokeStyle = colorSet.dark;
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(x, y, width, height);
             }
         }
 
