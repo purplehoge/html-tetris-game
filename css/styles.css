@@ -147,6 +147,11 @@ button:disabled {
     z-index: 1000;
 }
 
+.mobile-start-controls {
+    justify-content: center;
+    gap: 20px;
+}
+
 .control-row {
     display: flex;
     justify-content: center;
@@ -183,12 +188,13 @@ button:disabled {
 @media (max-width: 768px) {
     body {
         padding: 10px;
-        padding-bottom: 180px;
+        padding-bottom: 200px;
     }
     
     .game-container {
         flex-direction: column;
         gap: 15px;
+        padding-top: 20px;
     }
 
     #game-canvas {
@@ -201,11 +207,21 @@ button:disabled {
         padding: 15px;
     }
 
+    .buttons {
+        display: none;
+    }
+
     .mobile-controls {
         display: flex;
     }
 
     .controls {
         display: none;
+    }
+
+    .start-btn, .pause-btn {
+        font-size: 0.9em;
+        padding: 8px 16px;
+        min-width: 80px;
     }
 }

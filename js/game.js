@@ -80,11 +80,16 @@ class GameManager {
             { id: 'btn-right', action: () => this.move(1) },
             { id: 'btn-down', action: () => this.softDrop() },
             { id: 'btn-hard-drop', action: () => this.hardDrop() },
-            { id: 'btn-rotate', action: () => this.rotate() }
+            { id: 'btn-rotate', action: () => this.rotate() },
+            { id: 'btn-hold', action: () => this.hold() }
         ];
         
         // ホールドボタンのイベントリスナー
         document.getElementById('hold-btn').addEventListener('click', () => this.hold());
+        
+        // モバイル用のスタート・ポーズボタン
+        document.getElementById('mobile-start-btn').addEventListener('click', () => this.start());
+        document.getElementById('mobile-pause-btn').addEventListener('click', () => this.togglePause());
 
         touchButtons.forEach(button => {
             const element = document.getElementById(button.id);
